@@ -77,8 +77,9 @@ async function sendEmails() {
 
   // 3. Read emails
   if (!fs.existsSync(EMAILS_FILE_PATH)) {
-    console.error(`Emails file not found at: ${EMAILS_FILE_PATH}`);
-    return;
+    console.log(`Creating missing emails file at: ${EMAILS_FILE_PATH}`);
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(EMAILS_FILE_PATH, "");
   }
 
   const rawEmails = fs

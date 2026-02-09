@@ -1,11 +1,11 @@
 # LinkedIn Scraper & Email Automator
 
-A robust tool built with Playwright and Node.js to scrape LinkedIn posts for job opportunities (specifically QA/SDET roles) and automatically send application emails with resumes to discovered email addresses.
+A robust tool built with Playwright and Node.js to scrape LinkedIn posts for job opportunities and automatically send application emails with resumes to discovered email addresses.
 
 ## Features
 
 - **Automated Login**: Securely logs into LinkedIn using credentials from environment variables.
-- **Smart Scraping**: Navigates to filtered "QA role" posts from the past 24 hours.
+- **Smart Scraping**: Navigates to filtered "role" posts from the past 24 hours.
 - **Email Extraction**: Uses regex to find email addresses within post content, even handling "see more" expansions.
 - **Duplicate Prevention**: Maintains a list of processed emails to avoid sending multiple applications to the same address.
 - **Automated Outreach**: Automatically triggers `EmailSender.js` to send personalized emails with attachments via Gmail SMTP.
@@ -32,7 +32,7 @@ A robust tool built with Playwright and Node.js to scrape LinkedIn posts for job
 
    ```bash
    # Install all project dependencies
-   npm install
+   npm init -y
 
    # Explicitly install core libraries (if needed individually)
    npm install @playwright/test dotenv nodemailer
@@ -47,7 +47,8 @@ A robust tool built with Playwright and Node.js to scrape LinkedIn posts for job
 
 ### 1. Environment Variables (`.env`)
 
-Create a `.env` file in the root directory (use the existing one as a template) and populate it:
+1. **Rename** `.env.example` to `.env`.
+2. **Populate** the `.env` file with your credentials:
 
 ```env
 # LinkedIn Credentials
@@ -58,7 +59,8 @@ LINKEDIN_PASSWORD=your_linkedin_password
 EMAIL_USER=your_gmail@gmail.com
 EMAIL_PASS=your_google_app_password # 16-character code from Google Account Security
 
-# (Optional) Customize Email Subject
+# Customize Search & Email
+LINKEDIN_SEARCH_ROLE="QA role" # Keyword used for LinkedIn search
 EMAIL_SUBJECT="Application – QA / Software Testing Role"
 ```
 
@@ -69,9 +71,9 @@ EMAIL_SUBJECT="Application – QA / Software Testing Role"
 
 Ensure the following files exist in the `Data/` directory:
 
-- `Data/sdet.pdf` OR any file ending in `resume.pdf` (e.g., `Rohith_resume.pdf`): Your resume file.
-- `Data/EmailTemplate.txt`: The body of the email you want to send.
-- `Data/Emails.txt`: The system will automatically update this with discovered emails.
+- `Data/sdet.pdf` OR any file ending in `resume.pdf`: Your resume file.
+- `Data/EmailTemplate.txt`: The body of the email you want to send. (One is provided as a template).
+- `Data/Emails.txt`: Automatically managed by the system to store discovered emails.
 
 ---
 
@@ -83,26 +85,16 @@ This mode uses your actual Google Chrome profile, which means you're already log
 > You **MUST close all Google Chrome windows** completely before running this command.
 
 ```bash
-# MacOS / Linux
-npx playwright test test/LinkedInPersistent.spec.ts --headed
+# Run the persistent scraper
+npm run scrape
 ```
-
-### Run the Standard Scraper (Automated Login)
-
-The standard scraper uses a fresh browser session and logs in automatically using your `.env` credentials.
-
-```bash
-npx playwright test test/LinkedInUnified.spec.ts --headed
-```
-
-_Note: Using `--headed` is recommended to handle potential LinkedIn security checks (Captchas) manually if they appear._
 
 ### Run Email Sender Only
 
 If you already have a list of emails in `Data/Emails.txt` and want to send applications without scraping:
 
 ```bash
-node EmailSender.js
+npm run send
 ```
 
 ---

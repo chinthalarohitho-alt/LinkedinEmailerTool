@@ -2,6 +2,10 @@ import { test, chromium, Page } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
+import * as dotenv from "dotenv";
+
+// Load environment variables from .env file
+dotenv.config();
 
 /**
  * LinkedIn Persistent Profile Scraper
@@ -60,8 +64,8 @@ test("LinkedIn Persistent Scrape", async () => {
     }
 
     // --- 2. SEARCH & FILTER PHASE ---
-    const searchUrl =
-      "https://www.linkedin.com/search/results/content/?keywords=QA%20role";
+    const role = process.env.LINKEDIN_SEARCH_ROLE || "QA role";
+    const searchUrl = `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(role)}`;
     console.log(`Navigating to target results...`);
     await page.goto(searchUrl, { waitUntil: "load" });
     await page.waitForTimeout(5000);
@@ -94,7 +98,12 @@ test("LinkedIn Persistent Scrape", async () => {
     let discoveredEmails: Set<string> = new Set();
     const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 
-    // Load existing
+    // Load existing (Ensure directory and file exist)
+    const dataDir = path.dirname(EMAILS_FILE_PATH);
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    if (!fs.existsSync(EMAILS_FILE_PATH))
+      fs.writeFileSync(EMAILS_FILE_PATH, "");
+
     if (fs.existsSync(EMAILS_FILE_PATH)) {
       fs.readFileSync(EMAILS_FILE_PATH, "utf-8")
         .split("\n")

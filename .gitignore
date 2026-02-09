@@ -1,3 +1,13 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# Project Data
+/Data/ChromeProfile/
+/Data/Emails.txt
+/Data/*.pdf
+!/Data/EmailTemplate.txt
 
 # Playwright
 node_modules/
@@ -6,3 +16,7 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# OS
+.DS_Store
+Thumbs.db
