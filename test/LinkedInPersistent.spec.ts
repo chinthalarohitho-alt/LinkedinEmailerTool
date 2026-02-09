@@ -39,7 +39,8 @@ test("LinkedIn Persistent Scrape", async () => {
     ],
   });
 
-  const page = await context.newPage();
+  const page =
+    context.pages().length > 0 ? context.pages()[0] : await context.newPage();
 
   try {
     // --- 1. VERIFY SESSION ---
