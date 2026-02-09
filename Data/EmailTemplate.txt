@@ -1,0 +1,12 @@
+Hello,
+
+I’m reaching out to apply for the QA opening you posted. With a strong background in Playwright, API, and UI testing, I focus on building resilient test suites that ensure high-quality releases.
+
+What differentiates my approach is the use of AI-driven tools like the Playwright MCP Server and ChatGPT Atlas. By integrating these into my workflow, I’ve been able to significantly accelerate test case creation and refine coverage while maintaining 100% accuracy—essentially doing more in less time without sacrificing quality.
+
+I have attached my resume and would welcome the opportunity to discuss how my technical skills and AI-enhanced testing process can bring value to your team.
+
+Regards,
+Chinthala Rohith Kumar
+91****32
+https://www.linkedin.com/in/chinthala-rohith-kumar
