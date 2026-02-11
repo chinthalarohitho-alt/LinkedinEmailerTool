@@ -71,10 +71,12 @@ test("LinkedIn Persistent Scrape", async () => {
 
     // --- 2. SEARCH & FILTER PHASE ---
     const role = process.env.LINKEDIN_SEARCH_ROLE || "QA role";
-    const searchUrl = `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(role)}`;
-    console.log(`Navigating to target results...`);
+    // Using direct filter URL: Past 24 hours (datePosted=["past-24h"])
+    const searchUrl = `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(role)}&datePosted=%5B%22past-24h%22%5D&origin=FACETED_SEARCH`;
+
+    console.log(`Navigating to target results (filtered by Past 24h)...`);
     await page.goto(searchUrl, { waitUntil: "load" });
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(3000);
 
     // Close banners
     const mainDismiss = page
@@ -82,23 +84,9 @@ test("LinkedIn Persistent Scrape", async () => {
         'button[aria-label="Dismiss"], .artdeco-notification-badge__dismiss',
       )
       .first();
-    if (await mainDismiss.isVisible())
+    if (await mainDismiss.isVisible()) {
       await mainDismiss.click({ force: true }).catch(() => {});
-
-    // Apply "Past 24 hours" Filter
-    console.log('Applying "Past 24 hours" filter...');
-    const dateBtn = page.getByRole("button", { name: /Date posted/i }).first();
-    await dateBtn.click({ force: true });
-    await page.waitForTimeout(2000);
-
-    const past24Option = page.getByRole("radio", { name: /Past 24 hours/i });
-    await past24Option.click({ force: true });
-
-    const showResults = page
-      .getByRole("button", { name: /Show .* results|Show results/i })
-      .last();
-    await showResults.click({ force: true });
-    await page.waitForTimeout(5000);
+    }
 
     // --- 3. EXTRACTION PHASE ---
     let discoveredEmails: Set<string> = new Set();
@@ -118,21 +106,28 @@ test("LinkedIn Persistent Scrape", async () => {
         });
     }
 
+    let lastProcessedIndex = 0;
+    let idleCycles = 0;
+    const MAX_IDLE_CYCLES = 5;
+
     for (let i = 0; i < 25; i++) {
-      console.log(`Cycle ${i + 1}/25...`);
+      console.log(`\n--- Cycle ${i + 1}/25 ---`);
       const posts = page.locator(
         'div[data-view-name="feed-full-update"], li.reusable-search__result-container, article',
       );
-      const count = await posts.count();
+      const currentCount = await posts.count();
+      console.log(`Total posts visible: ${currentCount}`);
 
-      for (let j = 0; j < count; j++) {
+      let newEmailsInThisCycle = 0;
+
+      for (let j = lastProcessedIndex; j < currentCount; j++) {
         const post = posts.nth(j);
         try {
-          // Expand "more"
+          // Expand "more" if present
           const moreBtn = post.locator("xpath=.//span[text()=' more']");
-          if (await moreBtn.isVisible()) {
+          if ((await moreBtn.count()) > 0 && (await moreBtn.isVisible())) {
             await moreBtn.click({ force: true }).catch(() => {});
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(300); // Shorter wait for expansion
           }
         } catch (e) {}
 
@@ -147,16 +142,39 @@ test("LinkedIn Persistent Scrape", async () => {
             ) {
               console.log(`[FOUND] ${email}`);
               discoveredEmails.add(email);
+              newEmailsInThisCycle++;
               fs.appendFileSync(EMAILS_FILE_PATH, `${email}\n`);
             }
           });
         }
       }
-      await page.evaluate(() => window.scrollBy(0, 1500));
+
+      console.log(`New emails found in this cycle: ${newEmailsInThisCycle}`);
+      lastProcessedIndex = currentCount;
+
+      if (newEmailsInThisCycle === 0) {
+        idleCycles++;
+        console.log(
+          `No new emails found. Idle cycles: ${idleCycles}/${MAX_IDLE_CYCLES}`,
+        );
+      } else {
+        idleCycles = 0;
+      }
+
+      if (idleCycles >= MAX_IDLE_CYCLES) {
+        console.log("Stopping: No new results found for several cycles.");
+        break;
+      }
+
+      console.log("Scrolling for more content...");
+      await page.evaluate(() => window.scrollBy(0, 2000));
       await page.waitForTimeout(4000);
     }
 
     // --- 4. SUCCESS PHASE: Run Email Sender ---
+    console.log("Closing browser context...");
+    await context.close();
+
     if (discoveredEmails.size > 0) {
       console.log("Triggering Email Sender...");
       try {
@@ -168,8 +186,8 @@ test("LinkedIn Persistent Scrape", async () => {
         console.error("Email Sender failed.");
       }
     }
-  } finally {
-    console.log("Closing browser context...");
-    await context.close();
+  } catch (error) {
+    console.error("An error occurred during the scrape:", error);
+    await context.close().catch(() => {});
   }
 });
