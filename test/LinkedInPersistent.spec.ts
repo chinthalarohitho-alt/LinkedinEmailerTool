@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
 import * as dotenv from "dotenv";
+const sentEmailManager = require("../utils/SentEmailManager");
 
 // Load environment variables from .env file
 dotenv.config();
@@ -45,6 +46,10 @@ test("LinkedIn Persistent Scrape", async () => {
   try {
     // --- 1. VERIFY SESSION ---
     console.log("Checking LinkedIn session...");
+
+    // Quick cleanup of expired sent-email entries (96 hours)
+    sentEmailManager.cleanup();
+
     await page.goto("https://www.linkedin.com/feed/", { waitUntil: "load" });
 
     if (page.url().includes("login") || page.url().includes("checkpoint")) {
@@ -137,7 +142,8 @@ test("LinkedIn Persistent Scrape", async () => {
           matches.forEach((email) => {
             if (
               !discoveredEmails.has(email) &&
-              !email.includes("example.com")
+              !email.includes("example.com") &&
+              !sentEmailManager.isAlreadySent(email)
             ) {
               console.log(`[FOUND] ${email}`);
               discoveredEmails.add(email);
@@ -154,7 +160,7 @@ test("LinkedIn Persistent Scrape", async () => {
     if (discoveredEmails.size > 0) {
       console.log("Triggering Email Sender...");
       try {
-        execSync("node EmailSender.js", {
+        execSync("node utils/EmailSender.js", {
           stdio: "inherit",
           cwd: path.join(__dirname, ".."),
         });

@@ -2,10 +2,11 @@ const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
+const sentEmailManager = require("./SentEmailManager.js");
 
 console.log("Script starting...");
 
-const DATA_DIR = path.join(__dirname, "Data");
+const DATA_DIR = path.join(__dirname, "../Data");
 const EMAILS_FILE_PATH = path.join(DATA_DIR, "Emails.txt");
 const TEMPLATE_PATH = path.join(DATA_DIR, "EmailTemplate.txt");
 
@@ -116,6 +117,9 @@ async function sendEmails() {
     try {
       const info = await transporter.sendMail(mailOptions);
       console.log(`SUCCESS: Email sent to ${email} (ID: ${info.messageId})`);
+
+      // Record in sent emails log
+      sentEmailManager.addEmail(email);
 
       // Granular Deletion: Remove ONLY this email from Emails.txt immediately
       try {
